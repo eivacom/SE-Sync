@@ -15,7 +15,7 @@ Matrix StiefelProduct::project(const Matrix &A) const {
   Matrix P(p_, k_ * n_);
 
 #pragma omp parallel for
-  for (size_t i = 0; i < n_; ++i) {
+  for (int i = 0; i < n_; ++i) {
     // Compute the (thin) SVD of the ith block of A
     Eigen::JacobiSVD<Matrix> SVD(A.block(0, i * k_, p_, k_),
                                  Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -32,7 +32,7 @@ Matrix StiefelProduct::SymBlockDiagProduct(const Matrix &A, const Matrix &B,
   Matrix R(p_, k_ * n_);
 
 #pragma omp parallel for
-  for (size_t i = 0; i < n_; ++i) {
+  for (int i = 0; i < n_; ++i) {
     // Compute block product Bi' * Ci
     Matrix P =
         B.block(0, i * k_, p_, k_).transpose() * C.block(0, i * k_, p_, k_);

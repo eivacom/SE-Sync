@@ -1,6 +1,6 @@
 # dmrosen 4-July-2022
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.19)
 
 # PROJECT CONFIGURATION
 project(SESync LANGUAGES C CXX VERSION 1.0.0)
@@ -16,6 +16,23 @@ if(NOT CMAKE_BUILD_TYPE)
 else()
   message(STATUS "Building in ${CMAKE_BUILD_TYPE} mode\n")
 endif()
+
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
+# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /MD")
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/openmp:experimental>)
+
+# set_property(GLOBAL PROPERTY USE_FOLDERS ON) # what does this do?
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
+
+# set all the output directores
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+
+# exports all symbols in windows to be public (similar to linux. Still needs some library changes to do a fully shared build)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 # Directory for built libraries
 set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/lib CACHE PATH "The directory in which to place the SE-Sync library built by this project")
@@ -39,10 +56,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" CACHE STRING "The CMak
 
 
 # Find (system) Eigen library
-find_package(Eigen3 3.3.3 REQUIRED)
-if(EIGEN3_FOUND)
-message(STATUS "Found Eigen3 library: ${EIGEN3_INCLUDE_DIR}\n")
-endif()
+find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
+find_package(OpenBLAS CONFIG REQUIRED)  
+find_package(suitesparse CONFIG REQUIRED)  
 
 if(${ENABLE_VECTORIZATION})
 message(STATUS "Enabling SIMD/AVX instruction sets")
@@ -70,8 +86,9 @@ message(STATUS "")
 
 # FIND ADDITIONAL LIBRARIES
 # These next operations make use of the .cmake files shipped with Eigen3
-find_package(SPQR REQUIRED)
-find_package(BLAS REQUIRED)
+#find_package(Cholmod REQUIRED)
+#find_package(SPQR REQUIRED)                    
+#find_package(BLAS REQUIRED)
 
 
 # Find Optimization library
@@ -100,7 +117,7 @@ set(SESync_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SE-Sync/src)
 set(SESync_EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 
 # The SE-Sync headers and and Eigen 3, SPQR, and Cholmod are all referenced by the header files of the SE-Sync library, hence must be PUBLICLY included (i.e. clients using the SE-Sync headers must also include these headers)
-set(SESync_INCLUDES ${SESync_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR} ${SPQR_INCLUDES} CACHE INTERNAL "")
+set(SESync_INCLUDES ${SESync_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR} ${SUITESPARSE_INCLUDE_DIR} CACHE INTERNAL "")
 
 
 # SE-SYNC PROJECT
@@ -123,10 +140,20 @@ ${SESync_SOURCE_DIR}/SESync.cpp
 )
 
 # Build the SE-Sync library
-add_library(${PROJECT_NAME} SHARED ${SESync_HDRS} ${SESync_SRCS})
+add_library(${PROJECT_NAME} )
+target_sources(${PROJECT_NAME}
+    PRIVATE ${SESync_HDRS} ${SESync_SRCS}
+    PUBLIC FILE_SET HEADERS 
+    BASE_DIRS ${SESync_INCLUDE_DIR}
+    FILES ${SESync_HDRS})
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${SESync_PRIVATE_INCLUDES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${SESync_INCLUDES})
-target_link_libraries(${PROJECT_NAME} Optimization ILDL ${BLAS_LIBRARIES} ${SPQR_LIBRARIES} ${M} ${LAPACK})
+target_link_libraries(${PROJECT_NAME} Optimization ILDL 
+#suitesparse::suitesparse
+)# ${BLAS_LIBRARIES} ${M} ${LAPACK})
+
+
 
 if(OPENMP_FOUND)
 # Add additional compilation flags to enable OpenMP support
@@ -173,7 +200,6 @@ if(${BUILD_PYTHON_BINDINGS})
 endif()
 
 
-
 # BUILD EXAMPLE DRIVER
 add_subdirectory(examples)
 
@@ -181,10 +207,12 @@ add_subdirectory(examples)
 # EXPORT SE-SYNC LIBRARY
 
 # Add add entry for this project into CMake's package registry, so that this project can be found by other CMake projects
-set(CMAKE_EXPORT_PACKAGE_REGISTRY TRUE)  # This flag is required to actually export the package for CMake versions >= 3.15
+set(CMAKE_EXPORT_PACKAGE_REGISTRY FALSE)  # This flag is required to actually export the package for CMake versions >= 3.15
 export(PACKAGE ${PROJECT_NAME})
 # Create a configuration file for this project, so that it can be imported by other CMake projects
 export(TARGETS ${PROJECT_NAME} Optimization ILDL FILE ${PROJECT_NAME}Config.cmake)
+
+install(TARGETS ${PROJECT_NAME} Optimization ILDL FILE_SET HEADERS )
 
 
 # EXPORT SE-SYNC VISUALIZATION LIBRARY

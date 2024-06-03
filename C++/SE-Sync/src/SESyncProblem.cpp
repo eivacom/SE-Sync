@@ -348,7 +348,7 @@ Matrix SESyncProblem::round_solution(const Matrix Y) const {
 
 // Finally, project each dxd rotation block to SO(d)
 #pragma omp parallel for
-  for (size_t i = 0; i < n_; ++i)
+  for (int i = 0; i < n_; ++i)
     R.block(0, rot_offset + i * d_, d_, d_) =
         project_to_SOd(R.block(0, rot_offset + i * d_, d_, d_));
 
@@ -386,7 +386,7 @@ Matrix SESyncProblem::compute_Lambda_blocks(const Matrix &Y) const {
                                                                           : n_);
 
 #pragma omp parallel for
-  for (size_t i = 0; i < n_; ++i) {
+  for (int i = 0; i < n_; ++i) {
     Matrix P = SYt.block(offset + i * d_, 0, d_, Y.rows()) *
                Y.block(0, offset + i * d_, Y.rows(), d_);
     Lambda_blocks.block(0, i * d_, d_, d_) = .5 * (P + P.transpose());

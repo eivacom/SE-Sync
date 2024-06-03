@@ -3,9 +3,13 @@
 #include <iostream>
 #include <sstream>
 
+#ifdef ss_enable
 #include <Eigen/CholmodSupport>
-#include <Eigen/Geometry>
 #include <Eigen/SPQRSupport>
+#endif
+
+#include <Eigen/Geometry>
+
 
 #include "ILDL/ILDL.h"
 #include "Optimization/LinearAlgebra/LOBPCG.h"
@@ -590,7 +594,7 @@ Matrix chordal_initialization(size_t d, const SparseMatrix &B3) {
   Vector cR = B3.leftCols(d2) * Id_vec;
 
   Vector rvec;
-  Eigen::SPQR<SparseMatrix> QR(B3red);
+  SparseQRFactorization QR(B3red);
   rvec = -QR.solve(cR);
 
   Matrix Rchordal(d, d * num_poses);
@@ -843,7 +847,7 @@ bool fast_verification(const SparseMatrix &S, Scalar eta, size_t nx,
         Matrix TX(X.rows(), X.cols());
 
 #pragma omp parallel for
-        for (unsigned int i = 0; i < X.cols(); ++i) {
+        for (int i = 0; i < X.cols(); ++i) {
           // Calculate TX by preconditioning the columns of X one-by-one
           TX.col(i) = Mfact.solve(X.col(i), true);
         }
