@@ -3,10 +3,6 @@
 #include <iostream>
 #include <sstream>
 
-#ifdef ss_enable
-#include <Eigen/CholmodSupport>
-#include <Eigen/SPQRSupport>
-#endif
 
 #include <Eigen/Geometry>
 
@@ -15,6 +11,7 @@
 #include "Optimization/LinearAlgebra/LOBPCG.h"
 
 #include "SESync/SESync_utils.h"
+#include "SESync/SESync_types.h"
 
 namespace SESync {
 
@@ -634,7 +631,7 @@ Matrix recover_translations(const SparseMatrix &B1, const SparseMatrix &B2,
   Vector c = B2 * rvec;
 
   // Solve
-  Eigen::SPQR<SparseMatrix> QR(B1red);
+  SparseQRFactorization QR(B1red);
   Vector tred = -QR.solve(c);
 
   // Reshape this result into a d x (n-1) matrix
@@ -734,17 +731,17 @@ bool fast_verification(const SparseMatrix &S, Scalar eta, size_t nx,
   SparseMatrix M = S + eta * Id;
 
   /// Test positive-semidefiniteness via direct Cholesky factorization
-  Eigen::CholmodSupernodalLLT<SparseMatrix> MChol;
+  SparseCholeskyLLTFactorization MChol;
 
   /// Set various options for the factorization
-
+#ifdef ss_enalbe
   // Bail out early if non-positive-semidefiniteness is detected
   MChol.cholmod().quick_return_if_not_posdef = 1;
 
   // We know that we might be handling a non-PSD matrix, so suppress Cholmod's
   // printed error output
   MChol.cholmod().print = 0;
-
+#endif
   // Calculate Cholesky decomposition!
   MChol.compute(M);
 

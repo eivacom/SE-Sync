@@ -58,7 +58,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" CACHE STRING "The CMak
 # Find (system) Eigen library
 find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
 find_package(OpenBLAS CONFIG REQUIRED)  
-find_package(suitesparse CONFIG REQUIRED)  
+#find_package(suitesparse CONFIG REQUIRED)  
 
 if(${ENABLE_VECTORIZATION})
 message(STATUS "Enabling SIMD/AVX instruction sets")
@@ -152,7 +152,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${SESync_INCLUDES})
 target_link_libraries(${PROJECT_NAME} Optimization ILDL 
 #suitesparse::suitesparse
 )# ${BLAS_LIBRARIES} ${M} ${LAPACK})
-
+target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
 
 
 if(OPENMP_FOUND)

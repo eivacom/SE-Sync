@@ -10,7 +10,7 @@
 using namespace std;
 using namespace SESync;
 
-bool write_poses = false;
+bool write_poses = true;
 
 int main(int argc, char **argv) {
   if (argc != 2) {

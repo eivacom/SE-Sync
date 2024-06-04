@@ -16,14 +16,7 @@
 
 
 #include <Eigen/Dense>
-#ifdef ss_enalbe
-#include <Eigen/CholmodSupport>
-#include <Eigen/SPQRSupport>
-#else
-#include<Eigen/SparseQR>
-#include <Eigen/SparseCholesky>
-#include <Eigen/OrderingMethods>
-#endif
+
 #include <Eigen/Sparse>
 
 #include "SESync/RelativePoseMeasurement.h"
@@ -33,24 +26,7 @@
 
 namespace SESync {
 
-#ifdef ss_enalbe
-    /** The type of the sparse Cholesky factorization to use in the computation of
-     * the orthogonal projection operation */
-    typedef Eigen::CholmodDecomposition<SparseMatrix> SparseCholeskyFactorization;
 
-    /** The type of the QR decomposition to use in the computation of the orthogonal
-     * projection operation */
-
-    typedef Eigen::SPQR<SparseMatrix> SparseQRFactorization;
-#else
-    /** The type of the sparse Cholesky factorization to use in the computation of
- * the orthogonal projection operation */
-    typedef Eigen::SimplicialLLT<SparseMatrix> SparseCholeskyFactorization;
-
-    /** The type of the QR decomposition to use in the computation of the orthogonal
-     * projection operation */
-    typedef Eigen::SparseQR<SparseMatrix, Eigen::AMDOrdering<int>>  SparseQRFactorization;
-#endif
 
 class SESyncProblem {
 private:
