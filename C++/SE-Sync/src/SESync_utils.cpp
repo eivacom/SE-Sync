@@ -15,7 +15,13 @@
 
 namespace SESync {
 
-measurements_t read_g2o_file(const std::string &filename, size_t &num_poses) {
+ measurements_t read_g2o_file(const std::string& filename, size_t& num_poses)
+  {
+     std::ifstream infile(filename);
+     return read_g2o_file(infile,num_poses);
+}
+
+measurements_t read_g2o_file(std::istream& infile, size_t& num_poses) {
 
   // Preallocate output vector
   measurements_t measurements;
@@ -36,7 +42,7 @@ measurements_t read_g2o_file(const std::string &filename, size_t &num_poses) {
   size_t i, j;
 
   // Open the file for reading
-  std::ifstream infile(filename);
+
 
   num_poses = 0;
 
@@ -139,11 +145,76 @@ measurements_t read_g2o_file(const std::string &filename, size_t &num_poses) {
     measurements.push_back(measurement);
   } // while
 
-  infile.close();
+  
 
   num_poses++; // Account for the use of zero-based indexing
 
   return measurements;
+}
+
+SESync::poses_t read_g2o_poses(std::istream& infile)
+{
+    // Preallocate output vector
+    poses_t poses;
+
+    // A string used to contain the contents of a single line
+    std::string line;
+
+    // A string used to extract tokens from each line one-by-one
+    std::string token;
+
+    size_t indx;
+    // Preallocate various useful quantities
+    Scalar  x, y, z, qx, qy, qz, qw;
+
+    while (std::getline(infile, line))
+    {
+        // Construct a stream from the string
+        std::stringstream strstrm(line);
+
+        // Extract the first token from the string
+        strstrm >> token;
+
+        if (token == "VERTEX_SE3:QUAT")
+        {
+            // This is a 3D pose measurement
+
+            /** The g2o format specifies a 3D relative pose measurement in the
+             * following form:
+             *
+             * VERTEX_SE3:QUAT i x y z qx qy qz qw
+
+             */
+
+             // Extract formatted output
+            strstrm >> indx >> x >> y >> z >> qx >> qy >> qz >> qw;
+
+            // Fill in elements of the measurement
+
+            SE3::TF<> H_kf_w = SE3::TF<>::Identity();
+            // Raw measurements
+            SE3::pos(H_kf_w) = Eigen::Matrix<Scalar, 3, 1>(x, y, z);
+            SE3::rot(H_kf_w) = Eigen::Quaternion<Scalar>(qw, qx, qy, qz).toRotationMatrix();
+
+            poses[indx] = H_kf_w;
+        }
+
+    } // while
+    return poses;
+}
+
+std::ostream& save_g2o_poses(std::ostream& os, const poses_t& poses)
+{
+    for (const auto& p : poses)
+    {
+        Eigen::Matrix<Scalar, 3, 1> p0_kf = SE3::pos(p.second);
+        Eigen::Matrix<Scalar, 3, 3> R_kf_0 = SE3::rot(p.second);
+        Eigen::Quaternion<Scalar> q_kf_0(R_kf_0);
+        os << "VERTEX_SE3:QUAT"
+            << " " << p.first << " " << p0_kf.x() << " " << p0_kf.y() << " " << p0_kf.z() << " " << q_kf_0.x() << " " << q_kf_0.y() << " "
+            << q_kf_0.z() << " " << q_kf_0.w() << std::endl;
+    }
+    return os;
 }
 
 SparseMatrix construct_rotational_weight_graph_Laplacian(
@@ -734,7 +805,7 @@ bool fast_verification(const SparseMatrix &S, Scalar eta, size_t nx,
   SparseCholeskyLLTFactorization MChol;
 
   /// Set various options for the factorization
-#ifdef ss_enalbe
+#ifdef WITH_SUITESPARSE
   // Bail out early if non-positive-semidefiniteness is detected
   MChol.cholmod().quick_return_if_not_posdef = 1;
 

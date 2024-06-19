@@ -7,11 +7,11 @@
 #pragma once
 
 #include <Eigen/Dense>
-#ifdef ss_enalbe
+#ifdef WITH_SUITESPARSE
 #include <Eigen/CholmodSupport>
 #include <Eigen/SPQRSupport>
 #else
-#include<Eigen/SparseQR>
+#include <Eigen/SparseQR>
 #include <Eigen/SparseCholesky>
 #include <Eigen/OrderingMethods>
 #endif
@@ -75,7 +75,7 @@ typedef Optimization::Riemannian::TNTUserFunction<Matrix, Matrix, Scalar,
     SESyncTNTUserFunction;
 
 
-#ifdef ss_enalbe
+#ifdef WITH_SUITESPARSE
 /** The type of the sparse Cholesky factorization to use in the computation of
  * the orthogonal projection operation */
 typedef Eigen::CholmodDecomposition<SparseMatrix> SparseCholeskyFactorization;
@@ -90,14 +90,16 @@ typedef Eigen::CholmodSupernodalLLT<SparseMatrix> SparseCholeskyLLTFactorization
 #else
 /** The type of the sparse Cholesky factorization to use in the computation of
 * the orthogonal projection operation */
-typedef Eigen::SimplicialLDLT<SparseMatrix, 1, Eigen::NaturalOrdering<int>> SparseCholeskyFactorization;
+typedef Eigen::SimplicialLDLT<SparseMatrix, 1, Eigen::COLAMDOrdering<int>> SparseCholeskyFactorization;
 
 /// Test positive-semidefiniteness via direct Cholesky factorization
-typedef Eigen::SimplicialLLT<SparseMatrix, 1, Eigen::NaturalOrdering<int>> SparseCholeskyLLTFactorization;
+typedef Eigen::SimplicialLLT<SparseMatrix, 1, Eigen::COLAMDOrdering<int>> SparseCholeskyLLTFactorization;
 
 /** The type of the QR decomposition to use in the computation of the orthogonal
  * projection operation */
-typedef Eigen::SparseQR<SparseMatrix, Eigen::NaturalOrdering<int>>  SparseQRFactorization;
+//typedef Eigen::SparseQR<SparseMatrix, Eigen::COLAMDOrdering<int>>  SparseQRFactorization;
+
+typedef Eigen::LeastSquaresConjugateGradient < Eigen::SparseMatrix<double>>       SparseQRFactorization;
 #endif
 
 } // namespace SESync

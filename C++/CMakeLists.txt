@@ -53,12 +53,18 @@ set(BUILD_PYTHON_BINDINGS OFF CACHE BOOL "Build Python bindings.")
 
 # Add the .cmake files that ship with Eigen3 to the CMake module path (useful for finding other stuff)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" CACHE STRING "The CMake module path used for this project")
-
+set(ENABLE_SUITESPARSE OFF CACHE BOOL  "Enable SuiteSparse (disable for LGPL complince)")
 
 # Find (system) Eigen library
 find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
-find_package(OpenBLAS CONFIG REQUIRED)  
-#find_package(suitesparse CONFIG REQUIRED)  
+find_package(OpenBLAS CONFIG REQUIRED)
+if(${ENABLE_SUITESPARSE})
+    message(STATUS "Building with Suitsparese [See license rules]\n")
+    find_package(suitesparse CONFIG REQUIRED)
+    add_compile_definitions(WITH_SUITESPARSE)
+else()
+message(STATUS "Code is LGPL 3 compliant: Suitsparese is disabled\n")
+endif()
 
 if(${ENABLE_VECTORIZATION})
 message(STATUS "Enabling SIMD/AVX instruction sets")
@@ -149,9 +155,11 @@ target_sources(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${SESync_PRIVATE_INCLUDES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${SESync_INCLUDES})
-target_link_libraries(${PROJECT_NAME} Optimization ILDL 
-#suitesparse::suitesparse
-)# ${BLAS_LIBRARIES} ${M} ${LAPACK})
+if(${ENABLE_SUITESPARSE})
+target_link_libraries(${PROJECT_NAME} Optimization ILDL suitesparse::suitesparse)
+else()
+target_link_libraries(${PROJECT_NAME} Optimization ILDL)
+endif()
 target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
 
 

@@ -14,6 +14,50 @@ matrices used in the SE-Sync algorithm.
 #include "SESync/RelativePoseMeasurement.h"
 #include "SESync/SESync_types.h"
 
+namespace SE3
+{
+    
+    template <typename T = SESync::Scalar> using TF = Eigen::Matrix<T, 4, 4>;
+
+    template <typename MatType, int inRow, int inCol, int outRow, int outCol>
+    using ComponentEnableDim = typename std::enable_if<MatType::RowsAtCompileTime == inRow && MatType::ColsAtCompileTime == inCol, Eigen::Block<MatType, outRow, outCol>>::type;
+
+    template <typename MatType>
+    using ComponentAlgebraType = ComponentEnableDim<MatType, 6, 1, 3, 1>;
+    template <typename MatType>
+    using ComponentGroupTypeRot = ComponentEnableDim<MatType, 4, 4, 3, 3>;
+    template <typename MatType>
+    using ComponentGroupTypePos = ComponentEnableDim<MatType, 4, 4, 3, 1>;
+    
+    template <typename MatType>
+    inline ComponentAlgebraType<MatType> rot(MatType& x)
+    {
+        return x.block<3, 1>(0, 0);
+    }
+
+    template <typename MatType>
+    inline ComponentAlgebraType<MatType> pos(MatType& x)
+    {
+        return x.block<3, 1>(3, 0);
+    }
+
+    template <typename MatType>
+    inline ComponentGroupTypeRot<MatType> rot(MatType& x)
+    {
+        return x.block<3, 3>(0, 0);
+    }
+    template <typename MatType>
+    inline ComponentGroupTypePos<MatType> pos(MatType& x)
+    {
+        return x.block<3, 1>(0, 3);
+    }
+
+    template <typename MatType>
+    inline ComponentGroupTypePos<const MatType> pos(const MatType& x)
+    {
+        return x.block<3, 1>(0, 3);
+    }
+}
 namespace SESync {
 
 /** Given the name of a file containing a description of a special Euclidean
@@ -22,6 +66,20 @@ namespace SESync {
  * corresponding vector of RelativePoseMeasurements, and reports the total
  * number of poses in the pose-graph */
 measurements_t read_g2o_file(const std::string &filename, size_t &num_poses);
+
+/** Given the name of a file containing a description of a special Euclidean
+ * synchronization problem expressed in the .g2o format (i.e. using "EDGE_SE2 or
+ * EDGE_SE3:QUAT" measurements), this function constructs and returns the
+ * corresponding vector of RelativePoseMeasurements, and reports the total
+ * number of poses in the pose-graph */
+measurements_t read_g2o_file(std::istream& filename, size_t& num_poses);
+
+using poses_t = std::map<int, Eigen::Matrix<Scalar, 4, 4> >;
+
+
+poses_t read_g2o_poses(std::istream& infile);
+
+std::ostream& save_g2o_poses(std::ostream& os, const poses_t& poses);
 
 /** Given a vector of relative pose measurements, this function constructs and
  * returns the Laplacian of the rotational weight graph L(W^rho) */
