@@ -23,6 +23,20 @@ namespace SESync {
  * number of poses in the pose-graph */
 measurements_t read_g2o_file(const std::string &filename, size_t &num_poses);
 
+/** Given the name of a file containing a description of a special Euclidean
+ * synchronization problem expressed in the .g2o format (i.e. using "EDGE_SE2 or
+ * EDGE_SE3:QUAT" measurements), this function constructs and returns the
+ * corresponding vector of RelativePoseMeasurements, and reports the total
+ * number of poses in the pose-graph */
+measurements_t read_g2o_file(std::istream& filename, size_t& num_poses);
+
+using poses_t = std::map<int, Eigen::Matrix<Scalar, 4, 4> >;
+
+
+poses_t read_g2o_poses(std::istream& infile);
+
+std::ostream& save_g2o_poses(std::ostream& os, const poses_t& poses);
+
 /** Given a vector of relative pose measurements, this function constructs and
  * returns the Laplacian of the rotational weight graph L(W^rho) */
 SparseMatrix

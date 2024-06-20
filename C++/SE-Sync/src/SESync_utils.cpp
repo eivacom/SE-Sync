@@ -3,18 +3,25 @@
 #include <iostream>
 #include <sstream>
 
-#include <Eigen/CholmodSupport>
+
 #include <Eigen/Geometry>
-#include <Eigen/SPQRSupport>
+
 
 #include "ILDL/ILDL.h"
 #include "Optimization/LinearAlgebra/LOBPCG.h"
 
 #include "SESync/SESync_utils.h"
+#include "SESync/SESync_types.h"
 
 namespace SESync {
 
-measurements_t read_g2o_file(const std::string &filename, size_t &num_poses) {
+ measurements_t read_g2o_file(const std::string& filename, size_t& num_poses)
+  {
+     std::ifstream infile(filename);
+     return read_g2o_file(infile,num_poses);
+}
+
+measurements_t read_g2o_file(std::istream& infile, size_t& num_poses) {
 
   // Preallocate output vector
   measurements_t measurements;
@@ -35,7 +42,7 @@ measurements_t read_g2o_file(const std::string &filename, size_t &num_poses) {
   size_t i, j;
 
   // Open the file for reading
-  std::ifstream infile(filename);
+
 
   num_poses = 0;
 
@@ -138,11 +145,76 @@ measurements_t read_g2o_file(const std::string &filename, size_t &num_poses) {
     measurements.push_back(measurement);
   } // while
 
-  infile.close();
+  
 
   num_poses++; // Account for the use of zero-based indexing
 
   return measurements;
+}
+
+SESync::poses_t read_g2o_poses(std::istream& infile)
+{
+    // Preallocate output vector
+    poses_t poses;
+
+    // A string used to contain the contents of a single line
+    std::string line;
+
+    // A string used to extract tokens from each line one-by-one
+    std::string token;
+
+    size_t indx;
+    // Preallocate various useful quantities
+    Scalar  x, y, z, qx, qy, qz, qw;
+
+    while (std::getline(infile, line))
+    {
+        // Construct a stream from the string
+        std::stringstream strstrm(line);
+
+        // Extract the first token from the string
+        strstrm >> token;
+
+        if (token == "VERTEX_SE3:QUAT")
+        {
+            // This is a 3D pose measurement
+
+            /** The g2o format specifies a 3D relative pose measurement in the
+             * following form:
+             *
+             * VERTEX_SE3:QUAT i x y z qx qy qz qw
+
+             */
+
+             // Extract formatted output
+            strstrm >> indx >> x >> y >> z >> qx >> qy >> qz >> qw;
+
+            // Fill in elements of the measurement
+
+            Eigen::Matrix<Scalar, 4, 4> H_kf_w = Eigen::Matrix<Scalar, 4, 4>::Identity();
+            // Raw measurements
+            H_kf_w.block<3,1>(0,3) = Eigen::Matrix<Scalar, 3, 1>(x, y, z);
+            H_kf_w.block<3,3>(0,0) = Eigen::Quaternion<Scalar>(qw, qx, qy, qz).toRotationMatrix();
+
+            poses[indx] = H_kf_w;
+        }
+
+    } // while
+    return poses;
+}
+
+std::ostream& save_g2o_poses(std::ostream& os, const poses_t& poses)
+{
+    for (const auto& p : poses)
+    {
+        Eigen::Matrix<Scalar, 3, 1> p0_kf = p.second.block<3,1>(0,3);
+        Eigen::Matrix<Scalar, 3, 3> R_kf_0 = p.second.block<3,3>(0,0);
+        Eigen::Quaternion<Scalar> q_kf_0(R_kf_0);
+        os << "VERTEX_SE3:QUAT"
+            << " " << p.first << " " << p0_kf.x() << " " << p0_kf.y() << " " << p0_kf.z() << " " << q_kf_0.x() << " " << q_kf_0.y() << " "
+            << q_kf_0.z() << " " << q_kf_0.w() << std::endl;
+    }
+    return os;
 }
 
 SparseMatrix construct_rotational_weight_graph_Laplacian(
@@ -590,7 +662,7 @@ Matrix chordal_initialization(size_t d, const SparseMatrix &B3) {
   Vector cR = B3.leftCols(d2) * Id_vec;
 
   Vector rvec;
-  Eigen::SPQR<SparseMatrix> QR(B3red);
+  SparseQRFactorization QR(B3red);
   rvec = -QR.solve(cR);
 
   Matrix Rchordal(d, d * num_poses);
@@ -630,7 +702,7 @@ Matrix recover_translations(const SparseMatrix &B1, const SparseMatrix &B2,
   Vector c = B2 * rvec;
 
   // Solve
-  Eigen::SPQR<SparseMatrix> QR(B1red);
+  SparseQRFactorization QR(B1red);
   Vector tred = -QR.solve(c);
 
   // Reshape this result into a d x (n-1) matrix
@@ -730,17 +802,17 @@ bool fast_verification(const SparseMatrix &S, Scalar eta, size_t nx,
   SparseMatrix M = S + eta * Id;
 
   /// Test positive-semidefiniteness via direct Cholesky factorization
-  Eigen::CholmodSupernodalLLT<SparseMatrix> MChol;
+  SparseCholeskyLLTFactorization MChol;
 
   /// Set various options for the factorization
-
+#ifdef WITH_SUITESPARSE
   // Bail out early if non-positive-semidefiniteness is detected
   MChol.cholmod().quick_return_if_not_posdef = 1;
 
   // We know that we might be handling a non-PSD matrix, so suppress Cholmod's
   // printed error output
   MChol.cholmod().print = 0;
-
+#endif
   // Calculate Cholesky decomposition!
   MChol.compute(M);
 
@@ -843,7 +915,7 @@ bool fast_verification(const SparseMatrix &S, Scalar eta, size_t nx,
         Matrix TX(X.rows(), X.cols());
 
 #pragma omp parallel for
-        for (unsigned int i = 0; i < X.cols(); ++i) {
+        for (int i = 0; i < X.cols(); ++i) {
           // Calculate TX by preconditioning the columns of X one-by-one
           TX.col(i) = Mfact.solve(X.col(i), true);
         }

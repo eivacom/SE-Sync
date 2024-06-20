@@ -1,9 +1,9 @@
 [submodule "C++/Optimization"]
 	path = C++/Optimization
-	url = https://github.com/david-m-rosen/Optimization.git
+	url = https://github.com/eivacom/Optimization.git
 [submodule "MATLAB/SE-Sync/manopt"]
 	path = MATLAB/SE-Sync/manopt
 	url = ../manopt.git
 [submodule "C++/Preconditioners"]
 	path = C++/Preconditioners
-	url = https://github.com/david-m-rosen/Preconditioners.git
+	url = https://github.com/eivacom/Preconditioners.git
