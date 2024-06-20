@@ -191,10 +191,10 @@ SESync::poses_t read_g2o_poses(std::istream& infile)
 
             // Fill in elements of the measurement
 
-            SE3::TF<> H_kf_w = SE3::TF<>::Identity();
+            Eigen::Matrix<Scalar, 4, 4> H_kf_w = Eigen::Matrix<Scalar, 4, 4>::Identity();
             // Raw measurements
-            SE3::pos(H_kf_w) = Eigen::Matrix<Scalar, 3, 1>(x, y, z);
-            SE3::rot(H_kf_w) = Eigen::Quaternion<Scalar>(qw, qx, qy, qz).toRotationMatrix();
+            H_kf_w.block<3,1>(0,3) = Eigen::Matrix<Scalar, 3, 1>(x, y, z);
+            H_kf_w.block<3,3>(0,0) = Eigen::Quaternion<Scalar>(qw, qx, qy, qz).toRotationMatrix();
 
             poses[indx] = H_kf_w;
         }
@@ -207,8 +207,8 @@ std::ostream& save_g2o_poses(std::ostream& os, const poses_t& poses)
 {
     for (const auto& p : poses)
     {
-        Eigen::Matrix<Scalar, 3, 1> p0_kf = SE3::pos(p.second);
-        Eigen::Matrix<Scalar, 3, 3> R_kf_0 = SE3::rot(p.second);
+        Eigen::Matrix<Scalar, 3, 1> p0_kf = p.second.block<3,1>(0,3);
+        Eigen::Matrix<Scalar, 3, 3> R_kf_0 = p.second.block<3,3>(0,0);
         Eigen::Quaternion<Scalar> q_kf_0(R_kf_0);
         os << "VERTEX_SE3:QUAT"
             << " " << p.first << " " << p0_kf.x() << " " << p0_kf.y() << " " << p0_kf.z() << " " << q_kf_0.x() << " " << q_kf_0.y() << " "

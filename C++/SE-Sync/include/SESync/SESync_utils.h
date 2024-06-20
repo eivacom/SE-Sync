@@ -14,50 +14,6 @@ matrices used in the SE-Sync algorithm.
 #include "SESync/RelativePoseMeasurement.h"
 #include "SESync/SESync_types.h"
 
-namespace SE3
-{
-    
-    template <typename T = SESync::Scalar> using TF = Eigen::Matrix<T, 4, 4>;
-
-    template <typename MatType, int inRow, int inCol, int outRow, int outCol>
-    using ComponentEnableDim = typename std::enable_if<MatType::RowsAtCompileTime == inRow && MatType::ColsAtCompileTime == inCol, Eigen::Block<MatType, outRow, outCol>>::type;
-
-    template <typename MatType>
-    using ComponentAlgebraType = ComponentEnableDim<MatType, 6, 1, 3, 1>;
-    template <typename MatType>
-    using ComponentGroupTypeRot = ComponentEnableDim<MatType, 4, 4, 3, 3>;
-    template <typename MatType>
-    using ComponentGroupTypePos = ComponentEnableDim<MatType, 4, 4, 3, 1>;
-    
-    template <typename MatType>
-    inline ComponentAlgebraType<MatType> rot(MatType& x)
-    {
-        return x.block<3, 1>(0, 0);
-    }
-
-    template <typename MatType>
-    inline ComponentAlgebraType<MatType> pos(MatType& x)
-    {
-        return x.block<3, 1>(3, 0);
-    }
-
-    template <typename MatType>
-    inline ComponentGroupTypeRot<MatType> rot(MatType& x)
-    {
-        return x.block<3, 3>(0, 0);
-    }
-    template <typename MatType>
-    inline ComponentGroupTypePos<MatType> pos(MatType& x)
-    {
-        return x.block<3, 1>(0, 3);
-    }
-
-    template <typename MatType>
-    inline ComponentGroupTypePos<const MatType> pos(const MatType& x)
-    {
-        return x.block<3, 1>(0, 3);
-    }
-}
 namespace SESync {
 
 /** Given the name of a file containing a description of a special Euclidean
