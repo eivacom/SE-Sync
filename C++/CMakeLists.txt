@@ -54,6 +54,8 @@ set(BUILD_PYTHON_BINDINGS OFF CACHE BOOL "Build Python bindings.")
 # Add the .cmake files that ship with Eigen3 to the CMake module path (useful for finding other stuff)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" CACHE STRING "The CMake module path used for this project")
 set(ENABLE_SUITESPARSE OFF CACHE BOOL  "Enable SuiteSparse (disable for LGPL complince)")
+set(ENABLE_SHARED ON CACHE BOOL  "Select shared(default) on static linking")
+
 
 # Find (system) Eigen library
 find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
@@ -145,8 +147,12 @@ ${SESync_SOURCE_DIR}/SESyncProblem.cpp
 ${SESync_SOURCE_DIR}/SESync.cpp
 )
 
+if(${ENABLE_SHARED})
 # Build the SE-Sync library
-add_library(${PROJECT_NAME} )
+add_library(${PROJECT_NAME} SHARED)
+else()
+add_library(${PROJECT_NAME})
+endif()
 target_sources(${PROJECT_NAME}
     PRIVATE ${SESync_HDRS} ${SESync_SRCS}
     PUBLIC FILE_SET HEADERS 
