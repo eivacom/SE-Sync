@@ -19,7 +19,9 @@ endif()
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /MD")
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/openmp:experimental>)
+if(MSVC OR WIN32 OR MSYS)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/openmp:experimental>)
+endif()
 
 # set_property(GLOBAL PROPERTY USE_FOLDERS ON) # what does this do?
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
