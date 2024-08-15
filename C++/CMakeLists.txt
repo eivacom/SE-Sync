@@ -168,8 +168,9 @@ target_link_libraries(${PROJECT_NAME} Optimization ILDL suitesparse::suitesparse
 else()
 target_link_libraries(${PROJECT_NAME} Optimization ILDL)
 endif()
-target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
-
+if(MSVC OR WIN32 OR MSYS)
+    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+endif()
 
 if(OPENMP_FOUND)
 # Add additional compilation flags to enable OpenMP support
