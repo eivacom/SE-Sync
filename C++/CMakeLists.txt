@@ -17,16 +17,6 @@ else()
   message(STATUS "Building in ${CMAKE_BUILD_TYPE} mode\n")
 endif()
 
-if(UNIX AND NOT APPLE)
-    set(CMAKE_SKIP_RPATH FALSE)
-    set(CMAKE_SKIP_INSTALL_RPATH FALSE)
-    set(CMAKE_SKIP_BUILD_RPATH FALSE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
-    set(CMAKE_BUILD_RPATH "$ORIGIN")
-    set(CMAKE_INSTALL_RPATH "$ORIGIN")
-endif()
-
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /MD")
 if(MSVC OR WIN32 OR MSYS)
@@ -161,7 +151,7 @@ ${SESync_SOURCE_DIR}/SESync.cpp
 
 if(${ENABLE_SHARED})
 # Build the SE-Sync library
-add_library(${PROJECT_NAME} SHARED ${SESync_HDRS} ${SESync_SRCS})
+add_library(${PROJECT_NAME} SHARED)
 else()
 add_library(${PROJECT_NAME})
 endif()
@@ -175,6 +165,7 @@ if(UNIX AND NOT APPLE)
         INSTALL_RPATH_USE_LINK_PATH FALSE
     )
 endif()
+
 
 target_sources(${PROJECT_NAME}
     PRIVATE ${SESync_HDRS} ${SESync_SRCS}
