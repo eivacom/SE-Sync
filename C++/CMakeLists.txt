@@ -155,6 +155,18 @@ add_library(${PROJECT_NAME} SHARED)
 else()
 add_library(${PROJECT_NAME})
 endif()
+
+# Set RPATH properties
+if(UNIX AND NOT APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+        INSTALL_RPATH "$ORIGIN"
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+    )
+endif()
+
+
 target_sources(${PROJECT_NAME}
     PRIVATE ${SESync_HDRS} ${SESync_SRCS}
     PUBLIC FILE_SET HEADERS 
